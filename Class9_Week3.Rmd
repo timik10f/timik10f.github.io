@@ -1,0 +1,39 @@
+---
+title: "Class9_Week3"
+author: "Timur Akhmedzhanov"
+date: "November 10, 2016"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Plotly and R Markdown
+
+Created November, 10, 2016.
+
+Next slide contains interactive plot made with plotly.
+
+
+## Interactive plot of weight versus age of chicks on different diets
+
+```{r,echo = FALSE,warning=FALSE,message=FALSE}
+library(plotly)
+ChickWeight$Diet2 <- paste("Diet ",as.character(ChickWeight$Diet))
+f <- list(
+  family = "Times New Roman, monospace",
+  size = 25,
+  color = "#7f7f7f"
+)
+x <- list(
+  title = "Time, days",
+  titlefont = f
+)
+y <- list(
+  title = "Weight, gm",
+  titlefont = f
+)
+plot_ly(x = ChickWeight$Time,y = ChickWeight$weight, mode = "markers", color = ChickWeight$Diet2)%>%
+  layout(xaxis = x, yaxis = y)
+```
