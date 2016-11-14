@@ -1,0 +1,74 @@
+---
+title: "Predicting exercise pattern from accelerometers data"
+author: "Timur Akhmedzhanov"
+date: "November 13, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### In this project, I use the data from accelerometers on the belt, forearm, arm, and dumbell of 6 people in order to predict the manner in which they exerice. Namely, data is split in training and test sets. The data is presprocessed, a few different models are trained on a train set with cross validation, the best model is chosen and used on the test set.
+
+## Reading and preprocessing data.
+
+Both training and testing sets are read and preprocessed - the NA and empty variables are removed. A head function and one explatory plot are used for basic explaratory analysis. As it follows from the names of columns, columns 1 and 3 to 7 should be excluded, since they contain information about measurement number, time and window number rather than physical data. 
+
+The  variables (except the "classe" which is being predicted) could be scaled and centered for training stage. However, it is not required since accuracy rate of almost 100% is achieved by random forest without it (see next section for details).
+
+```{r, message= FALSE}
+set.seed(7)
+setwd("C:/Users/Timur/Documents")
+training <- read.csv('training.csv')
+testing <- read.csv('testing.csv')
+dim(training)
+xNA <- colSums(is.na(training))<1
+training <- training[,xNA]
+xEmpty <- colSums(training == '')<1
+training <- training[,xEmpty]
+xNol <- colSums(training == '#DIV/0!')<1
+training <- training[,xNol]
+testing <- testing[,xNA]
+testing <- testing[,xEmpty]
+testing <- testing[,xNol]
+head(testing, n = 1)
+plot(training$user_name,as.factor(training$classe), xlab = 'User name', ylab = 'classe variable')
+library(caret)
+training <- training[,c(2,8:60)]
+testing <- testing[,c(2,8:60)]
+#training[,-60] <- predict(preProcess(training[,-60], method=c("scale","center")),training[,-60])
+#testing[,-60] <- predict(preProcess(testing[,-60], method=c("scale","center")),testing[,-60])
+
+```
+
+
+## Training models and choosing the best one.
+
+Three different models are trained on a train set - random forest (rf), generalized boosted models (gbm) and generalized linear models (glmnet). Cross validation is introduced automatically through trainControl command (1 times repeated 5-fold cross validation is used). Then the best model is chosen based on the accuracy of predicting on training set. As it can be seen, the best model (random forest) gives correct prediction in virtually 100% cases. Thus, a reasonable high-end estimate of out of sample error rate should be also up to 100%. 
+```{r,cache=TRUE}
+control <- trainControl(method="repeatedcv", number=5, repeats=1)
+# train the model
+fitRF <- train(classe~., data=training,method="rf", trControl=control)
+fitGBM <- train(classe~., data=training, method="gbm", trControl=control, verbose=FALSE)
+fitGLM <- train(classe~., data=training,method="glmnet", trControl=control)
+prRF <- predict(fitRF, training[,-54])
+confusionMatrix(training[,54],prRF)
+prGBM <- predict(fitGBM, training[,-54])
+confusionMatrix(training[,54],prGBM)
+prGLM <- predict(fitGLM, training[,-54])
+confusionMatrix(training[,54],prGLM)
+
+```
+
+
+
+## Predicting on a test set.
+
+The chosen model -  random forest is applied to the test set. As it can be seen from typing those answers in the quiz for Week 4 of the class, it gives correct prediction in all the cases, which is reasonably close (and equal) to the accuracy of prediction on a training set. It seems that this accuracy was achived due to reasonably small number of possible outcomes and a big number of variables to make prediction from. A large number of samples in training set also helped.
+
+```{r, message=FALSE}
+prTest <- predict(fitRF, testing[,-54])
+prTest
+```
+
